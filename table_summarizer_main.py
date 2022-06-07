@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, 
 NavigationToolbar2Tk)
 import ts_config as cf
+import tkinter.ttk as ttk
+from tkinter.filedialog import askopenfile 
 
 class UpperRightStats(tk.Frame):
     def __init__(self, parent):
@@ -18,14 +20,14 @@ class UpperRightStats(tk.Frame):
 
         # Summary Statistics
         self.stats_labels = [
-        tk.Label(self.parent, font = cf.h2_font, text="Summary Statistics", bg=cf.bg_color),
-        tk.Label(self.parent, font = cf.body_font, text="Mean: " + str(np.mean(data)), bg=cf.bg_color),
-        tk.Label(self.parent, font = cf.body_font, text="Median: " + str(np.median(data)), bg=cf.bg_color),
-        tk.Label(self.parent, font = cf.body_font, text="Std: " + str(np.std(data)), bg=cf.bg_color),
-        tk.Label(self.parent, font = cf.body_font, text="Min: " + str(np.min(data)), bg=cf.bg_color),
-        tk.Label(self.parent, font = cf.body_font, text="Max: " + str(np.max(data)), bg=cf.bg_color),
-        tk.Label(self.parent, font = cf.body_font, text="Q1: " + str(np.quantile(data, 0.25)), bg=cf.bg_color),
-        tk.Label(self.parent, font = cf.body_font, text="Q3: " + str(np.quantile(data, 0.75)), bg=cf.bg_color)
+            tk.Label(self.parent, font = cf.h2_font, text="Summary Statistics", bg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="Mean: " + str(np.mean(data)), bg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="Median: " + str(np.median(data)), bg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="Std: " + str(np.std(data)), bg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="Min: " + str(np.min(data)), bg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="Max: " + str(np.max(data)), bg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="Q1: " + str(np.quantile(data, 0.25)), bg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="Q3: " + str(np.quantile(data, 0.75)), bg=cf.bg_color)
         ]
         for i, label in enumerate(self.stats_labels):
             label.grid(row=i + 1, column=2, sticky="W")
@@ -38,7 +40,25 @@ class UpperRightStats(tk.Frame):
                 except Exception as e:
                     print(e)
                     print("Error in removing label")
-        self.stats_labels = None
+            self.stats_labels = None
+    
+    def add_dummy_labels(self):
+        if self.stats_labels != None:
+            print("Previous Statistics Not Cleared")
+        # Summary Statistics
+        self.stats_labels = [
+            tk.Label(self.parent, font = cf.h2_font, text="E", bg=cf.bg_color, fg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="E", bg=cf.bg_color, fg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="E", bg=cf.bg_color, fg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="E", bg=cf.bg_color, fg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="E", bg=cf.bg_color, fg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="E", bg=cf.bg_color, fg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="E", bg=cf.bg_color, fg=cf.bg_color),
+            tk.Label(self.parent, font = cf.body_font, text="E", bg=cf.bg_color, fg=cf.bg_color)
+        ]
+        for i, label in enumerate(self.stats_labels):
+            label.grid(row=i + 1, column=2, sticky="W", padx=150)
+
 
 
 class BottomGraphs(tk.Frame):
@@ -76,6 +96,7 @@ class MainApp(tk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self.parent = parent
+        self.filepath = ""
         self.data = None
         self.parent.geometry(cf.window_geom)
         self.parent.configure(background=cf.bg_color)
@@ -86,12 +107,14 @@ class MainApp(tk.Frame):
         # Create Stats Page
         self.upper_right_stats = UpperRightStats(self.parent)
         self.bottom_graphs = BottomGraphs(self.parent)
+        
 
         tk.Label(self.parent, font = cf.h1_font, text="Table Summarizer", bg=cf.bg_color).grid(
             row=0, column=0, columnspan=3)
         tk.Button(self.parent, text='Find Table', font=cf.body_font, command=lambda : self.get_data_file()).grid(row=2, column=0)
         self.option_menu = tk.OptionMenu(self.parent, self.selected_column, *self.select_options, 
             command = lambda : self.change_column()).grid(row=4, column=0)
+        self.upper_right_stats.add_dummy_labels()
 
         #x = np.random.normal(loc=0, scale=25, size=(500))
         #self.upper_right_stats.add_onevar_stats(x)
@@ -105,16 +128,27 @@ class MainApp(tk.Frame):
             self.upper_right_stats.add_onevar_stats(self.data[self.selected_column.get()])
     
     def get_data_file(self):
-        x_frame = pd.DataFrame(np.random.normal(0,100,size=(213, 4)), columns=list('ABCD'))
-        self.data = x_frame
+        # x_frame = pd.DataFrame(np.random.normal(0,100,size=(213, 4)), columns=list('ABCD'))
+        # self.data = x_frame
+
+        self.filepath = askopenfile(mode='r', filetypes=[("CSV Files","*.csv")]).name
+        if self.filepath != "":
+            self.data = pd.read_csv(self.filepath, index_col=False)
+
         self.select_options = list(self.data.columns)
         self.selected_column.set(self.select_options[0])
+        self.change_column()
         if self.option_menu is not None:
             self.option_menu.destroy()
         self.option_menu = tk.OptionMenu(self.parent, self.selected_column, *self.select_options, 
             command = lambda q : self.change_column()).grid(row=4, column=0)
 
 if __name__ == "__main__":
+
+    x_frame_test = pd.DataFrame(np.random.normal(0,100,size=(66, 4)), columns=list('ABCD'))
+    x_frame_test.to_csv("/home/brisk/Desktop/Projects/table-summarizer/test_csvs/normal66testby4.csv", index = False)
+
+
     root = tk.Tk()
     MainApp(root)
     root.mainloop()
